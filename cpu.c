@@ -236,7 +236,7 @@ void or (Cpu * cpu, uint8_t addressing)
 void not(Cpu * cpu, uint8_t addressing)
 {
     uint8_t *target = handle_single_address(cpu, addressing);
-    uint8_t result = !*target;
+    uint8_t result = ~*target;
     *target = result;
 
     uint8_t flags[5] = {0, 0, result == 0, check_parity(result), 0};
