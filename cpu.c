@@ -45,56 +45,123 @@ uint8_t *handle_address(Cpu *cpu, uint8_t addressing, uint8_t *value)
     switch (addressing)
     {
     case 0x00:
-        *value = cpu->b;
         address = &cpu->a;
+        *value = cpu->b;
         break;
     case 0x01:
+        address = &cpu->b;
+        *value = cpu->a;
         break;
     case 0x02:
+        address = &cpu->a;
+        *value = cpu->i;
         break;
     case 0x03:
+        address = &cpu->i;
+        *value = cpu->a;
         break;
     case 0x04:
+        address = &cpu->a;
+        *value = cpu->memory[cpu->i];
         break;
     case 0x05:
+        address = &cpu->memory[cpu->i];
+        *value = cpu->a;
         break;
     case 0x06:
-        *value = cpu->memory[cpu->pc++];
         address = &cpu->a;
+        *value = cpu->memory[cpu->pc++];
         break;
     case 0x07:
-        *value = cpu->memory[cpu->pc++];
         address = &cpu->b;
+        *value = cpu->memory[cpu->pc++];
         break;
     case 0x08:
+        address = &cpu->i;
+        *value = cpu->memory[cpu->pc++];
         break;
     case 0x09:
+        address = &cpu->memory[cpu->i];
+        *value = cpu->memory[cpu->pc++];
         break;
     case 0x0A:
+        address = &cpu->a;
+        *value = cpu->memory[cpu->memory[cpu->pc++]];
         break;
     case 0x0B:
+        address = &cpu->b;
+        *value = cpu->memory[cpu->memory[cpu->pc++]];
         break;
     case 0x0C:
+        address = &cpu->memory[cpu->memory[cpu->pc++]];
+        *value = cpu->a;
         break;
     case 0x0D:
+        address = &cpu->memory[cpu->memory[cpu->pc++]];
+        *value = cpu->b;
         break;
     }
 
     return address;
 }
 
+uint8_t *handle_single_address(Cpu *cpu, uint8_t addressing)
+{
+    uint8_t *address = NULL;
+    switch (addressing)
+    {
+    case 0x00:
+        address = &cpu->a;
+        break;
+    case 0x01:
+        address = &cpu->b;
+        break;
+    case 0x02:
+        address = &cpu->i;
+        break;
+    case 0x04:
+        address = &cpu->memory[cpu->i];
+        break;
+    }
+
+    return address;
+}
+
+uint8_t check_parity(uint8_t byte)
+{
+    return 0; // WIP
+}
+
+uint8_t get_flag(uint8_t flags[5])
+{
+    uint8_t flag = 0x0;
+
+    for (int i = 0; i < 5; i++)
+        flag |= flags[4 - i];
+
+    return flag;
+}
+
 void add(Cpu *cpu, uint8_t addressing)
 {
     uint8_t value;
     uint8_t *target = handle_address(cpu, addressing, &value);
-    *target += value;
+    uint16_t result = *target + value;
+    *target = result & 0xFF;
+
+    uint8_t flags[5] = {result > 0xFF, result > 0xFF, 0, check_parity(result), 0};
+    cpu->flags = get_flag(flags);
 }
 
 void sub(Cpu *cpu, uint8_t addressing)
 {
     uint8_t value;
     uint8_t *target = handle_address(cpu, addressing, &value);
-    *target -= value;
+    uint16_t result = *target - value;
+    *target = result & 0xFF;
+
+    uint8_t flags[5] = {0, *target < value, result == 0, check_parity(result), *target < value};
+    cpu->flags = get_flag(flags);
 }
 
 void mov(Cpu *cpu, uint8_t addressing)
@@ -106,19 +173,70 @@ void mov(Cpu *cpu, uint8_t addressing)
 
 void cmp(Cpu *cpu, uint8_t addressing)
 {
+    uint8_t value;
+    uint8_t *target = handle_address(cpu, addressing, &value);
+    int16_t result = *target - value;
+    *target = abs(result) & 0xFF;
+
+    uint8_t flags[5] = {0, 0, result == 0, check_parity(result), result < 0};
+    cpu->flags = get_flag(flags);
+}
+
+void inc(Cpu *cpu, uint8_t addressing)
+{
+    uint8_t *target = handle_single_address(cpu, addressing);
+    uint16_t result = *target + 1;
+    *target = result & 0xFF;
+
+    uint8_t flags[5] = {result > 0xFF, result > 0xFF, 0, check_parity(result), 0};
+    cpu->flags = get_flag(flags);
+}
+
+void dec(Cpu *cpu, uint8_t addressing)
+{
+    uint8_t *target = handle_single_address(cpu, addressing);
+    int16_t result = *target - 1;
+    *target = abs(result) & 0xFF;
+
+    uint8_t flags[5] = {0, 0, result == 0, check_parity(result), result < 0};
+    cpu->flags = get_flag(flags);
 }
 
 void and (Cpu * cpu, uint8_t addressing)
 {
+    uint8_t value;
+    uint8_t *target = handle_address(cpu, addressing, &value);
+    uint8_t result = *target & value;
+    *target = result;
+
+    uint8_t flags[5] = {0, 0, result == 0, check_parity(result), 0};
+    cpu->flags = (cpu->flags & 0x18) | get_flag(flags); // mask only the zf, pf, sf
 }
 
 void or (Cpu * cpu, uint8_t addressing)
 {
+    uint8_t value;
+    uint8_t *target = handle_address(cpu, addressing, &value);
+    uint8_t result = *target | value;
+    *target = result;
+
+    uint8_t flags[5] = {0, 0, result == 0, check_parity(result), 0};
+    cpu->flags = (cpu->flags & 0x18) | get_flag(flags); // mask only the zf, pf, sf
+}
+
+void not(Cpu * cpu, uint8_t addressing)
+{
+    uint8_t *target = handle_single_address(cpu, addressing);
+    uint8_t result = !*target;
+    *target = result;
+
+    uint8_t flags[5] = {0, 0, result == 0, check_parity(result), 0};
+    cpu->flags = (cpu->flags & 0x18) | get_flag(flags); // mask only the zf, pf, sf
 }
 
 void run(Cpu *cpu)
 {
-    int instruction;
+    uint8_t instruction;
     do
     {
         instruction = cpu->memory[cpu->pc++];
@@ -137,10 +255,10 @@ void run(Cpu *cpu)
             cmp(cpu, addressing);
             break;
         case 0x03:
-            printf("inc\n");
+            inc(cpu, addressing);
             break;
         case 0x04:
-            printf("dec\n");
+            dec(cpu, addressing);
             break;
         case 0x05:
             and(cpu, addressing);
@@ -149,7 +267,7 @@ void run(Cpu *cpu)
             or (cpu, addressing);
             break;
         case 0x07:
-            printf("not\n");
+            not(cpu, addressing);
             break;
         case 0x08:
             printf("shr\n");
