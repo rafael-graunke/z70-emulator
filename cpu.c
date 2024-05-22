@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <unistd.h>
 #include "cpu.h"
 
 Cpu create_cpu()
@@ -168,7 +169,7 @@ void sub(Cpu *cpu, uint8_t addressing)
     uint8_t *target = handle_address(cpu, addressing, &value);
     uint8_t negative = *target < value;
     uint8_t result = *target - value;
-    *target = 0x100 - result ;
+    *target = 0x100 - result;
 
     uint8_t flags[5] = {0, negative, result == 0, check_parity(result), negative};
     cpu->flags = get_flag(flags);
@@ -305,56 +306,65 @@ void jump(Cpu *cpu, uint8_t addressing)
     }
 }
 
+uint8_t step(Cpu *cpu)
+{
+    print_state(cpu);
+    uint8_t instruction = cpu->memory[cpu->pc++];
+    uint8_t op = (instruction & 0xF0) >> 4;
+    uint8_t addressing = instruction & 0x0F;
+
+    switch (op)
+    {
+    case 0x00:
+        add(cpu, addressing);
+        break;
+    case 0x01:
+        sub(cpu, addressing);
+        break;
+    case 0x02:
+        cmp(cpu, addressing);
+        break;
+    case 0x03:
+        inc(cpu, addressing);
+        break;
+    case 0x04:
+        dec(cpu, addressing);
+        break;
+    case 0x05:
+        and(cpu, addressing);
+        break;
+    case 0x06:
+        or (cpu, addressing);
+        break;
+    case 0x07:
+        not(cpu, addressing);
+        break;
+    case 0x08:
+        shr(cpu, addressing);
+        break;
+    case 0x09:
+        shl(cpu, addressing);
+        break;
+    case 0x0A:
+        jump(cpu, addressing);
+        break;
+    case 0x0B:
+        mov(cpu, addressing);
+        break;
+    case 0x0F:
+        printf("Exiting...\n");
+        break;
+    }
+
+    return instruction;
+}
+
 void run(Cpu *cpu)
 {
     uint8_t instruction;
     do
     {
-        instruction = cpu->memory[cpu->pc++];
-        uint8_t op = (instruction & 0xF0) >> 4;
-        uint8_t addressing = instruction & 0x0F;
-
-        switch (op)
-        {
-        case 0x00:
-            add(cpu, addressing);
-            break;
-        case 0x01:
-            sub(cpu, addressing);
-            break;
-        case 0x02:
-            cmp(cpu, addressing);
-            break;
-        case 0x03:
-            inc(cpu, addressing);
-            break;
-        case 0x04:
-            dec(cpu, addressing);
-            break;
-        case 0x05:
-            and(cpu, addressing);
-            break;
-        case 0x06:
-            or (cpu, addressing);
-            break;
-        case 0x07:
-            not(cpu, addressing);
-            break;
-        case 0x08:
-            shr(cpu, addressing);
-            break;
-        case 0x09:
-            shl(cpu, addressing);
-            break;
-        case 0x0A:
-            jump(cpu, addressing);
-            break;
-        case 0x0B:
-            mov(cpu, addressing);
-            break;
-        case 0x0F:
-            printf("Exiting...\n");
-            break;
-        }
+        getchar(); // Press enter to step through execution
+        instruction = step(cpu);
     } while (instruction != 0xFF);
 }

@@ -16,6 +16,7 @@ typedef struct s_cpu
 Cpu create_cpu();
 void load_rom(Cpu *cpu, char *file_path);
 void print_state(Cpu *cpu);
+uint8_t step(Cpu *cpu);
 void run(Cpu *cpu);
 
 #endif
