@@ -12,4 +12,5 @@ void main(int argc, char *argv[]) {
     Cpu cpu = create_cpu();
     load_rom(&cpu, argv[1]);
     run(&cpu);
+    print_state(&cpu);
 }

@@ -17,6 +17,15 @@ Cpu create_cpu()
     return cpu;
 }
 
+void print_state(Cpu *cpu)
+{
+    printf("PC:\t0x%02x\n", cpu->pc);
+    printf("A:\t0x%02x\n", cpu->a);
+    printf("B:\t0x%02x\n", cpu->b);
+    printf("I:\t0x%02x\n", cpu->i);
+    printf("FLAGS:\t0x%02x\n", cpu->flags);
+}
+
 void load_rom(Cpu *cpu, char *file_path)
 {
     FILE *f = fopen(file_path, "rb");
@@ -137,7 +146,7 @@ uint8_t get_flag(uint8_t flags[5])
     uint8_t flag = 0x0;
 
     for (int i = 0; i < 5; i++)
-        flag |= flags[4 - i];
+        flag |= flags[4 - i] << i;
 
     return flag;
 }
@@ -157,10 +166,11 @@ void sub(Cpu *cpu, uint8_t addressing)
 {
     uint8_t value;
     uint8_t *target = handle_address(cpu, addressing, &value);
-    uint16_t result = *target - value;
-    *target = result & 0xFF;
+    uint8_t negative = *target < value;
+    uint8_t result = *target - value;
+    *target = 0x100 - result ;
 
-    uint8_t flags[5] = {0, *target < value, result == 0, check_parity(result), *target < value};
+    uint8_t flags[5] = {0, negative, result == 0, check_parity(result), negative};
     cpu->flags = get_flag(flags);
 }
 
@@ -176,7 +186,6 @@ void cmp(Cpu *cpu, uint8_t addressing)
     uint8_t value;
     uint8_t *target = handle_address(cpu, addressing, &value);
     int16_t result = *target - value;
-    *target = abs(result) & 0xFF;
 
     uint8_t flags[5] = {0, 0, result == 0, check_parity(result), result < 0};
     cpu->flags = get_flag(flags);
@@ -234,6 +243,68 @@ void not(Cpu * cpu, uint8_t addressing)
     cpu->flags = (cpu->flags & 0x18) | get_flag(flags); // mask only the zf, pf, sf
 }
 
+void shr(Cpu *cpu, uint8_t addressing)
+{
+    uint8_t *target = handle_single_address(cpu, addressing);
+    uint8_t carry = *target & 0x01;
+    uint8_t result = *target >> 1;
+    *target = result;
+
+    uint8_t flags[5] = {0, carry, result == 0, check_parity(result), 0};
+    cpu->flags = get_flag(flags);
+}
+
+void shl(Cpu *cpu, uint8_t addressing)
+{
+    uint8_t *target = handle_single_address(cpu, addressing);
+    uint8_t carry = *target & 0x01;
+    uint8_t result = *target << 1;
+    *target = result;
+
+    uint8_t flags[5] = {carry, carry, result == 0, check_parity(result), 0};
+    cpu->flags = get_flag(flags);
+}
+
+void jump(Cpu *cpu, uint8_t addressing)
+{
+    switch (addressing)
+    {
+    case 0x00:
+        cpu->pc = cpu->memory[cpu->pc];
+        break;
+    case 0x01:
+        if (cpu->flags & 0x04)
+        {
+            cpu->pc = cpu->memory[cpu->pc];
+        }
+        break;
+    case 0x02:
+        if (cpu->flags & 0x01)
+        {
+            cpu->pc = cpu->memory[cpu->pc];
+        }
+        break;
+    case 0x03:
+        if (cpu->flags & 0x08)
+        {
+            cpu->pc = cpu->memory[cpu->pc];
+        }
+        break;
+    case 0x04:
+        if (cpu->flags & 0x10)
+        {
+            cpu->pc = cpu->memory[cpu->pc];
+        }
+        break;
+    case 0x05:
+        if (cpu->flags & 0x02)
+        {
+            cpu->pc = cpu->memory[cpu->pc];
+        }
+        break;
+    }
+}
+
 void run(Cpu *cpu)
 {
     uint8_t instruction;
@@ -270,13 +341,13 @@ void run(Cpu *cpu)
             not(cpu, addressing);
             break;
         case 0x08:
-            printf("shr\n");
+            shr(cpu, addressing);
             break;
         case 0x09:
-            printf("shl\n");
+            shl(cpu, addressing);
             break;
         case 0x0A:
-            printf("jump\n");
+            jump(cpu, addressing);
             break;
         case 0x0B:
             mov(cpu, addressing);
