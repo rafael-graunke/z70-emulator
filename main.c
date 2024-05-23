@@ -4,12 +4,12 @@
 #include "screen.h"
 #include "cpu.h"
 
-void main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
     if (argc < 2)
     {
         printf("Missing ROM name.\n");
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
 
     Screen *screen = create_screen();
@@ -32,6 +32,7 @@ void main(int argc, char *argv[])
             instruction = step(&cpu);
         else if (strcmp(input, "run") == 0)
             instruction = run(&cpu);
-
     }
+
+    return EXIT_SUCCESS;
 }
