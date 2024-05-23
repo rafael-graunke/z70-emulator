@@ -1,8 +1,8 @@
 CC=gcc
 CFLAGS=-lncurses
 
-CFILES=cpu.c main.c
-OBJECTS=cpu.o main.o
+CFILES=cpu.c screen.c main.c
+OBJECTS=cpu.o screen.o main.o
 
 OUT_DIR=out
 BINARY=bin

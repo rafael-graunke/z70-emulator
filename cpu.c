@@ -4,65 +4,61 @@
 #include <unistd.h>
 #include "cpu.h"
 
-Screen create_screen()
-{
-    Screen screen;
-    screen.main_window = initscr();
-    start_color();
-    use_default_colors();
-    init_pair(1, COLOR_BLACK, COLOR_WHITE);
-    refresh();
-
-    getmaxyx(screen.main_window, screen.y, screen.x);
-    screen.main_memory = newwin(screen.y / 2, screen.x * 2 / 3, 0, 0);
-    screen.instructions = newwin(screen.y, screen.x / 3, 0, screen.x * 2 / 3);
-    screen.registers = newwin(screen.y / 2 - 3, screen.x * 2 / 3, screen.y / 2, 0);
-    screen.input = newwin(3, screen.x * 2 / 3, screen.y - 3, 0);
-
-    return screen;
-}
-
-void init_screen(Screen *screen)
-{
-    box(screen->instructions, 0, 0);
-    mvwprintw(screen->instructions, 0, 1, "INSTRUCTIONS");
-    box(screen->registers, 0, 0);
-    mvwprintw(screen->registers, 0, 1, "REGISTERS");
-    box(screen->input, 0, 0);
-}
 
 void draw_memory_address(Cpu *cpu, uint8_t address, uint8_t colored)
 {
     if (colored)
-        wattron(cpu->screen->main_memory, COLOR_PAIR(1));
+        wattron(cpu->screen->memory, COLOR_PAIR(1));
     if (address % 0x10 == 0)
-        wprintw(cpu->screen->main_memory, "\n  %.2x: ", address);
-    wprintw(cpu->screen->main_memory, "%.2x", cpu->memory[address]);
+        wprintw(cpu->screen->memory, "\n  %.2x: ", address);
+    wprintw(cpu->screen->memory, "%.2x", cpu->memory[address]);
     if ((address - 1) % 0x02 == 0)
-        wprintw(cpu->screen->main_memory, " ");
-    wattroff(cpu->screen->main_memory, COLOR_PAIR(1));
+        wprintw(cpu->screen->memory, " ");
+    wattroff(cpu->screen->memory, COLOR_PAIR(1));
 }
 
 void draw_memory(Cpu *cpu)
 {
     for (int i = 0x80; i < 0x100; i++)
         draw_memory_address(cpu, i, 0);
-    box(cpu->screen->main_memory, 0, 0);
-    mvwprintw(cpu->screen->main_memory, 0, 1, "MAIN MEMORY");
-    wrefresh(cpu->screen->main_memory);
+    box(cpu->screen->memory, 0, 0);
+    mvwprintw(cpu->screen->memory, 0, 1, "MAIN MEMORY");
+    wrefresh(cpu->screen->memory);
+}
+
+void draw_instructions(Cpu *cpu)
+{
+    box(cpu->screen->instructions, 0, 0);
+    mvwprintw(cpu->screen->instructions, 0, 1, "INSTRUCTIONS");
+    wrefresh(cpu->screen->instructions);
+}
+
+void draw_registers(Cpu *cpu)
+{
+    WINDOW *s = cpu->screen->registers;
+    mvwprintw(s, 1, 1, "PC: %.2x", cpu->pc);
+    mvwprintw(s, 2, 1, "A: %.2x", cpu->a);
+    mvwprintw(s, 3, 1, "B: %.2x", cpu->b);
+    mvwprintw(s, 4, 1, "I: %.2x", cpu->i);
+    mvwprintw(s, 5, 1, "FLAGS: %.2x", cpu->flags);
+    box(s, 0, 0);
+    mvwprintw(s, 0, 1, "REGISTERS");
+    wrefresh(s);
 }
 
 void draw_screen(Cpu *cpu)
 {
     draw_memory(cpu);
-    wrefresh(cpu->screen->instructions);
-    wrefresh(cpu->screen->registers);
+    draw_instructions(cpu);
+    draw_registers(cpu);
     wrefresh(cpu->screen->input);
+    box(cpu->screen->input, 0, 0);
 }
 
 Cpu create_cpu(Screen *screen)
 {
     Cpu cpu;
+    cpu.running = 1;
     cpu.screen = screen;
     memset(cpu.memory, 0, 256);
     cpu.pc = 0;
@@ -397,20 +393,20 @@ uint8_t step(Cpu *cpu)
     case 0x0B:
         mov(cpu, addressing);
         break;
-    case 0x0F:
-        printf("Exiting...\n");
-        break;
     }
+
+    draw_screen(cpu);
 
     return instruction;
 }
 
-void run(Cpu *cpu)
+uint8_t run(Cpu *cpu)
 {
     uint8_t instruction;
     do
     {
-        getchar(); // Press enter to step through execution
         instruction = step(cpu);
     } while (instruction != 0xFF);
+
+    return instruction;
 }
