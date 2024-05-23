@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=
+CFLAGS=-lncurses
 
 CFILES=cpu.c main.c
 OBJECTS=cpu.o main.o
@@ -13,10 +13,10 @@ $(OUT_DIR):
 	mkdir $(OUT_DIR)
 
 $(OUT_DIR)/$(BINARY): $(OBJECTS)
-	$(CC) -o $@ $^
+	$(CC) -o $@ $^ $(CFLAGS)
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c -o $@ $^
+	$(CC) -c -o $@ $^ $(CFLAGS)
 
 clean:
 	rm -rf $(OUT_DIR) *.o

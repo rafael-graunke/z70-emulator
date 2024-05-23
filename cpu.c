@@ -1,13 +1,69 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 #include <unistd.h>
 #include "cpu.h"
 
-Cpu create_cpu()
+Screen create_screen()
+{
+    Screen screen;
+    screen.main_window = initscr();
+    start_color();
+    use_default_colors();
+    init_pair(1, COLOR_BLACK, COLOR_WHITE);
+    refresh();
+
+    getmaxyx(screen.main_window, screen.y, screen.x);
+    screen.main_memory = newwin(screen.y / 2, screen.x * 2 / 3, 0, 0);
+    screen.instructions = newwin(screen.y, screen.x / 3, 0, screen.x * 2 / 3);
+    screen.registers = newwin(screen.y / 2 - 3, screen.x * 2 / 3, screen.y / 2, 0);
+    screen.input = newwin(3, screen.x * 2 / 3, screen.y - 3, 0);
+
+    return screen;
+}
+
+void init_screen(Screen *screen)
+{
+    box(screen->instructions, 0, 0);
+    mvwprintw(screen->instructions, 0, 1, "INSTRUCTIONS");
+    box(screen->registers, 0, 0);
+    mvwprintw(screen->registers, 0, 1, "REGISTERS");
+    box(screen->input, 0, 0);
+}
+
+void draw_memory_address(Cpu *cpu, uint8_t address, uint8_t colored)
+{
+    if (colored)
+        wattron(cpu->screen->main_memory, COLOR_PAIR(1));
+    if (address % 0x10 == 0)
+        wprintw(cpu->screen->main_memory, "\n  %.2x: ", address);
+    wprintw(cpu->screen->main_memory, "%.2x", cpu->memory[address]);
+    if ((address - 1) % 0x02 == 0)
+        wprintw(cpu->screen->main_memory, " ");
+    wattroff(cpu->screen->main_memory, COLOR_PAIR(1));
+}
+
+void draw_memory(Cpu *cpu)
+{
+    for (int i = 0x80; i < 0x100; i++)
+        draw_memory_address(cpu, i, 0);
+    box(cpu->screen->main_memory, 0, 0);
+    mvwprintw(cpu->screen->main_memory, 0, 1, "MAIN MEMORY");
+    wrefresh(cpu->screen->main_memory);
+}
+
+void draw_screen(Cpu *cpu)
+{
+    draw_memory(cpu);
+    wrefresh(cpu->screen->instructions);
+    wrefresh(cpu->screen->registers);
+    wrefresh(cpu->screen->input);
+}
+
+Cpu create_cpu(Screen *screen)
 {
     Cpu cpu;
+    cpu.screen = screen;
     memset(cpu.memory, 0, 256);
     cpu.pc = 0;
     cpu.a = 0;
@@ -16,15 +72,6 @@ Cpu create_cpu()
     cpu.flags = 0;
 
     return cpu;
-}
-
-void print_state(Cpu *cpu)
-{
-    printf("PC:\t0x%02x\n", cpu->pc);
-    printf("A:\t0x%02x\n", cpu->a);
-    printf("B:\t0x%02x\n", cpu->b);
-    printf("I:\t0x%02x\n", cpu->i);
-    printf("FLAGS:\t0x%02x\n", cpu->flags);
 }
 
 void load_rom(Cpu *cpu, char *file_path)
@@ -308,7 +355,6 @@ void jump(Cpu *cpu, uint8_t addressing)
 
 uint8_t step(Cpu *cpu)
 {
-    print_state(cpu);
     uint8_t instruction = cpu->memory[cpu->pc++];
     uint8_t op = (instruction & 0xF0) >> 4;
     uint8_t addressing = instruction & 0x0F;
