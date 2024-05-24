@@ -1,22 +1,27 @@
-CC=gcc
-CFLAGS=-lncurses -std=c99 -pedantic
+C := gcc
+CFLAGS := -lncurses -std=c99 -pedantic
 
-CFILES=cpu.c screen.c main.c
-OBJECTS=cpu.o screen.o main.o
+SRCDIR := src
+INCLUDEDIR := include
+OBJDIR := obj
 
-OUT_DIR=out
-BINARY=bin
+SOURCES := $(shell find $(SRCDIR) -name "*.c")
+OBJECTS := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(SOURCES))
+INCLUDES := $(addprefix -I,$(INCLUDEDIR))
 
-all: $(OUT_DIR) $(OUT_DIR)/$(BINARY)
+BINARY := z70emu
 
-$(OUT_DIR):
-	mkdir $(OUT_DIR)
+all: $(OBJDIR) $(BINARY)
 
-$(OUT_DIR)/$(BINARY): $(OBJECTS)
+$(BINARY): $(OBJECTS)
 	$(CC) -o $@ $^ $(CFLAGS)
 
-%.o: %.c
-	$(CC) -c -o $@ $^
+$(OBJDIR):
+	mkdir $(OBJDIR)
+
+$(OBJDIR)/%.o: $(SRCDIR)/%.c
+	$(CC) $(INCLUDES) -c -o $@ $^
 
 clean:
-	rm -rf $(OUT_DIR) *.o
+	rm -rf $(OBJDIR) $(BINARY)
+

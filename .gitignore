@@ -52,4 +52,5 @@ Mkfile.old
 dkms.conf
 bin
 .vscode
-out/
+obj/
+z70emu
