@@ -5,7 +5,6 @@
 #include <ncurses.h>
 #include "screen.h"
 
-
 typedef struct s_cpu
 {
     Screen *screen;
@@ -23,6 +22,5 @@ void draw_screen(Cpu *cpu);
 void load_rom(Cpu *cpu, char *file_path);
 uint8_t step(Cpu *cpu);
 uint8_t run(Cpu *cpu);
-
 
 #endif

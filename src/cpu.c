@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include "cpu.h"
 
-
 void draw_memory_address(Cpu *cpu, uint8_t address, uint8_t colored)
 {
     if (colored)
@@ -19,7 +18,7 @@ void draw_memory_address(Cpu *cpu, uint8_t address, uint8_t colored)
 
 void draw_memory(Cpu *cpu)
 {
-    for (int i = 0x80; i < 0x100; i++)
+    for (int i = 0x00; i < 0x100; i++)
         draw_memory_address(cpu, i, 0);
     box(cpu->screen->memory, 0, 0);
     mvwprintw(cpu->screen->memory, 0, 1, "MAIN MEMORY");
