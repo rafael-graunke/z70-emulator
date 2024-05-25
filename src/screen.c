@@ -14,9 +14,9 @@ Screen *create_screen(void)
     refresh();
 
     getmaxyx(screen->main, screen->y, screen->x);
-    screen->memory = newwin(screen->y / 2, screen->x * 2 / 3, 0, 0);
+    screen->memory = newwin(screen->y - 6, screen->x * 2 / 3, 0, 0);
     screen->instructions = newwin(screen->y, screen->x / 3, 0, screen->x * 2 / 3);
-    screen->registers = newwin(screen->y / 2 - 3, screen->x * 2 / 3, screen->y / 2, 0);
+    screen->registers = newwin(3, screen->x * 2 / 3, screen->y - 6, 0);
     screen->input = newwin(3, screen->x * 2 / 3, screen->y - 3, 0);
 
     return screen;

@@ -35,11 +35,8 @@ void draw_instructions(Cpu *cpu)
 void draw_registers(Cpu *cpu)
 {
     WINDOW *s = cpu->screen->registers;
-    mvwprintw(s, 1, 1, "PC: %.2x", cpu->pc);
-    mvwprintw(s, 2, 1, "A: %.2x", cpu->a);
-    mvwprintw(s, 3, 1, "B: %.2x", cpu->b);
-    mvwprintw(s, 4, 1, "I: %.2x", cpu->i);
-    mvwprintw(s, 5, 1, "FLAGS: %.2x", cpu->flags);
+    wmove(s, 1, 1);
+    wprintw(s, "PC=%.2x  A=%.2x  B=%.2x  I=%.2x  FLAGS=%.2x", cpu->pc, cpu->a, cpu->b, cpu->i, cpu->flags);
     box(s, 0, 0);
     mvwprintw(s, 0, 1, "REGISTERS");
     wrefresh(s);
