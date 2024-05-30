@@ -24,11 +24,7 @@ Screen *create_screen(void)
 
 void destroy_screen(Screen *screen)
 {
-    delwin(screen->input);
-    delwin(screen->instructions);
-    delwin(screen->registers);
-    delwin(screen->memory);
-    delwin(screen->main);
+    endwin();
     free(screen);
 }
 

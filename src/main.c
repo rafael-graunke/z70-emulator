@@ -34,5 +34,7 @@ int main(int argc, char *argv[])
             instruction = run(&cpu);
     }
 
+    destroy_screen(screen);
+
     return EXIT_SUCCESS;
 }

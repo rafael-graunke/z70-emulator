@@ -311,38 +311,45 @@ void jump(Cpu *cpu, uint8_t addressing)
     {
     case 0x00:
         cpu->pc = cpu->memory[cpu->pc];
-        break;
+        return;
     case 0x01:
         if (cpu->flags & 0x04)
         {
             cpu->pc = cpu->memory[cpu->pc];
+            return;
         }
         break;
     case 0x02:
         if (cpu->flags & 0x01)
         {
             cpu->pc = cpu->memory[cpu->pc];
+            return;
         }
         break;
     case 0x03:
         if (cpu->flags & 0x08)
         {
             cpu->pc = cpu->memory[cpu->pc];
+            return;
         }
         break;
     case 0x04:
         if (cpu->flags & 0x10)
         {
             cpu->pc = cpu->memory[cpu->pc];
+            return;
         }
         break;
     case 0x05:
         if (cpu->flags & 0x02)
         {
             cpu->pc = cpu->memory[cpu->pc];
+            return;
         }
         break;
     }
+
+    cpu->pc++;
 }
 
 uint8_t step(Cpu *cpu)
